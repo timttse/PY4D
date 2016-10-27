@@ -63,13 +63,16 @@ def main(args):
 	else:
 
 		scriptFolder=os.path.abspath(os.path.join(path,os.pardir)) # script file's parent directory
-		sys.path.insert(0,scriptFolder)                            #    
+		sys.path.insert(0,scriptFolder) # Add modules located at script location                      
 		foo = imp.load_source(moduleName,path)
 
-	methodToCall= getattr(foo,func)
-	p=[v for v in params.values()]
-	execString="methodToCall(*p)"
-	ret=eval(execString)
+	try:
+		methodToCall= getattr(foo,func)
+		p=[v for v in params.values()]
+		execString="methodToCall(*p)"
+		ret=eval(execString)
+	except:
+		ret=None
 
 	js=JSONEncoder()
 	if(ret!=None):
@@ -97,8 +100,6 @@ def main(args):
 		resObj='{"Return":' + js.encode(ret)+', "Type":"'+retTypeString+appendObjStr+'}'
 		print resObj
 
-
-# print "success"
 if __name__=="__main__":
 
 	args = raw_input("") # get json input from 4D
