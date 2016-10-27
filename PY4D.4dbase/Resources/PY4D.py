@@ -2,7 +2,7 @@ import imp, sys
 import json
 import os.path
 from types import *
-from json import JSONEncoder, JSONDecoder
+from json import JSONEncoder
 from collections import OrderedDict
 
 def loadBuiltIn():
@@ -44,22 +44,6 @@ def convertUnicodeToString(uStr):
 	if type(x) == UnicodeType:
 		return str(uStr)
 	return uStr
-
-def getInstalledPackages():
-	installedPackages=pip.get_installed_distributions()
-	print len(installedPackages)
-
-	packages=[]
-	for p in installedPackages:
-		packages.append(p.project_name)
-		
-	print packages
-
-	for p in packages:
-		try:
-			__import__(p)
-		except:
-			pip.main(['install', p])
 
 def main(args):
 	jsonData=json.loads(args.decode('utf-8','ignore'),object_pairs_hook=OrderedDict) # parse json
