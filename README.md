@@ -1,5 +1,5 @@
 # PY4D
-Execute python function from given python script<br/>
+Execute python function or script from 4D software.<br/>
 
 4D Method: PY_EXECUTE<br/>
 Parameters:<br/>
