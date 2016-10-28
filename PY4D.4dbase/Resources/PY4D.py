@@ -72,6 +72,7 @@ def main(args):
 		execString="methodToCall(*p)"
 		ret=eval(execString)
 	except:
+		exec(str(func))
 		ret=None
 
 	js=JSONEncoder()
