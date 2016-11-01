@@ -1,18 +1,21 @@
 import imp, sys
 import json
 import os.path
-from types import *
+# from types import *
 from json import JSONEncoder
 from collections import OrderedDict
 
-def loadBuiltIn():
-	return imp.init_builtin("__builtin__")
+try:
+	import __builtin__
+except(NameError,ImportError):
+	import builtins
+# import builtins
 
 ## get array of valid 4D types
 def getValid4DTypes(n=True,s=True,b=True):
-	numTypes=[IntType,LongType,FloatType]
-	strTypes=[StringType,UnicodeType]
-	boolTypes=[BooleanType]
+	numTypes=[int,float]
+	strTypes=[str,bytes,unicode]
+	boolTypes=[bool]
 	return (numTypes*n)+(strTypes*s)+(boolTypes*b)
 
 
@@ -32,54 +35,51 @@ def getListType(seq):
 
     return firstType if all( (type(x) is firstType) for x in iseq ) else False
 
-## checks if list elements are same type, and valid in 4D (string,boolean,numeric).
-## If valid, return type, else return False
-def getValidArray(seq):
-	validTypes=getValid4DTypes()
+def evalMethod(module,func,params):
+	try:
+		methodToCall= getattr(module,func)
+		p=[v for v in params.values()]
+		execString="methodToCall(*p)"
+		return eval(execString)
+	except(AttributeError):
+		exec(func)
+		return None
 
-	elemType=getListType(seq)
-	return elemType if (elemType in validTypes) else False
+def evalBuiltIn(pyVer,func,params):
+	if (pyVer=="2"):
+		return evalMethod(__builtin__,func,params)
+	else:
+		return evalMethod(builtins,func,params)
 
-def convertUnicodeToString(uStr):
-	if type(x) == UnicodeType:
-		return str(uStr)
-	return uStr
+def main(args,pyVer):
+	# args=json.loads(args.decode('utf-8','ignore'),object_pairs_hook=OrderedDict) # parse json
+	args=json.loads(args.decode('utf-8','ignore'),object_pairs_hook=OrderedDict)
+	# args=json.loads(args,object_pairs_hook=OrderedDict)
 
-def main(args):
-	jsonData=json.loads(args.decode('utf-8','ignore'),object_pairs_hook=OrderedDict) # parse json
-
-	moduleName=jsonData["ModuleName"]
-	path=jsonData["Path"]
-	func=jsonData["Function"]
-
-
-	if 'Parameters' in jsonData: 
-		params=jsonData["Parameters"]
+	moduleName=args["ModuleName"]
+	path=args["Path"]
+	func=args["Function"]
+	if 'Parameters' in args: 
+		params=args["Parameters"]
 	else:
 		params={}
 
-	if moduleName=="":
-		foo = loadBuiltIn()
+	if moduleName=="" and func!="":
+		# ret=evalBuiltIn(func,params)
+		ret=evalBuiltIn(pyVer,func,params)
+
 	else:
 
 		scriptFolder=os.path.abspath(os.path.join(path,os.pardir)) # script file's parent directory
-		sys.path.insert(0,scriptFolder) # Add modules located at script location                      
+		sys.path.insert(0,scriptFolder) # Add modules located at script location   
 		foo = imp.load_source(moduleName,path)
-
-	try:
-		methodToCall= getattr(foo,func)
-		p=[v for v in params.values()]
-		execString="methodToCall(*p)"
-		ret=eval(execString)
-	except:
-		exec(str(func))
-		ret=None
+		ret=evalMethod(foo,func,params)
 
 	js=JSONEncoder()
 	if(ret!=None):
 		retType=type(ret)
 		appendObjStr=''
-		if retType==ListType or retType==TupleType:
+		if retType==list or retType==tuple:
 			listElemType=getListType(ret)
 
 			if listElemType:  ## If all list elements are the same type
@@ -99,10 +99,15 @@ def main(args):
 
 		retTypeString=str(retType)
 		resObj='{"Return":' + js.encode(ret)+', "Type":"'+retTypeString+appendObjStr+'}'
-		print resObj
+		print (resObj)
 
 if __name__=="__main__":
 
-	args = raw_input("") # get json input from 4D
-	main(args)
+	pyVer=sys.version[0]
+	if (pyVer=='2'):
+		args=raw_input()
+	else:
+		args=input()
+
+	main(args,pyVer)
 	
